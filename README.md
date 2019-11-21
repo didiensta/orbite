@@ -39,9 +39,4 @@ You can make a video of the simulation with gnuplot.sh:
 
     ./gnuplot.sh folder_of_the_simulation
 
-It use gnuplot to render an image at each saved time steps and then use ffmpeg to animate them.
-
-
-
-
-
+It uses gnuplot to render an image at each saved time steps and then uses ffmpeg to animate them.
