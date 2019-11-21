@@ -16,17 +16,6 @@ use crate::write::*;
 
 fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
 
-    //create folders
-    fs::create_dir(folder.clone()).unwrap_or_else(|err| {
-        if err.kind() == ErrorKind::AlreadyExists {
-            panic!("Simulation file already exists! Please change 'folder' in the configuration file.")
-        } else {
-            panic!("Unforeseen error creating simulation folder")
-        }
-    });
-    fs::create_dir(format!("{}/positions", folder)).unwrap();
-    fs::create_dir(format!("{}/densities", folder)).unwrap();
-
     //time
     let mut t = 0f64;
     //vector for infos
@@ -76,10 +65,13 @@ fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
         inertia_matrices.push(tree.inertia_matrix);
 
         //write to file the positions of the particules and the density
-        write_positions(&tree, format!("{}/positions/{}.csv", folder, c.to_string()));
+        write_positions(
+            &tree, 
+            format!("{}/positions/{}.csv", folder, c.to_string()));
+
         write_density(
             &tree,
-            format!("{}/densities/{}.csv", folder.clone(), t.to_string()),
+            format!("{}/densities/{}.csv", folder, t.to_string()),
         );
 
         //simulate 10 steps
@@ -99,12 +91,22 @@ fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
 
 fn read<T>(section: &std::collections::HashMap<std::string::String, std::string::String>, expr: &str) -> T 
     where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Debug {
+        //for better readability in main below
     section.get(expr).unwrap().parse().unwrap()
 }
 
+
 fn main() {
-    //read values from the configuration file
-    let arg: String = args().nth(1).unwrap();
+    /////////////////////////////////////////////
+    // read values from the configuration file //
+    /////////////////////////////////////////////
+    let arg: String;
+    if let Some(argument) = args().nth(1) {
+        arg = argument
+    } else {
+        panic!("No configuration file given as argument!")
+    }
+
     let conf = Ini::load_from_file(format!("./{}", arg)).unwrap();
 
     let section = conf.section(None::<String>).unwrap();
@@ -136,36 +138,23 @@ fn main() {
     let mu_init = read(section, "mu_init");
     let theta_init = read(section, "theta_init");
 
-    /*
-    //number of particules
-    let nb_particules = section.get("nb_particules").unwrap().parse().unwrap();
-    //number of particles positions saved
-    let nb_particules_save = section.get("nb_particules_save").unwrap().parse().unwrap();
-    //dt = dynamycal_time / mu
-    let mu = section.get("mu").unwrap().parse().unwrap();
-    //epsilon = (4/(3*N*pi))^(1/3) R50 / lambda
-    let lambda = section.get("lambda").unwrap().parse().unwrap();
-    //initial value of the virial ratio
-    let virial: f64 = section.get("virial").unwrap().parse().unwrap();
-    //duration of the simulation in dynamical time
-    let time = section.get("time").unwrap().parse().unwrap();
-    //approximation of the acceleration
-    let theta = section.get("theta").unwrap().parse().unwrap();
-    //is it a plummer model or a uniform sphere
-    let plummer = section.get("plummer").unwrap().parse().unwrap();
-    //number of bins used for the density
-    let nb_bins = section.get("nb_bins").unwrap().parse().unwrap();
-    //number of neighbors used for the local density
-    let nb_neighbors = section.get("nb_neighbors").unwrap().parse().unwrap();
-    //folder name
-    let folder = section.get("folder").unwrap();
-    //we use special theta and mu for the start of the simulation
-    let crash_time = section.get("crash_time").unwrap().parse().unwrap();
-    let mu_init = section.get("mu_init").unwrap().parse().unwrap();
-    let theta_init = section.get("theta_init").unwrap().parse().unwrap();
-    */
+    //////////////////////////////////////////////
+    /////////////// create folders ///////////////
+    //////////////////////////////////////////////
+    fs::create_dir(folder.clone()).unwrap_or_else(|err| {
+        if err.kind() == ErrorKind::AlreadyExists {
+            panic!("Simulation file already exists! \
+Please change 'folder' in the configuration file.")
+        } else {
+            panic!("Unforeseen error creating simulation folder")
+        }
+    });
+    fs::create_dir(format!("{}/positions", folder)).unwrap();
+    fs::create_dir(format!("{}/densities", folder)).unwrap();
 
-    //build the octree and generate particules
+    //////////////////////////////////////////////
+    // build the octree and generate particules //
+    //////////////////////////////////////////////
     let mut tree = Tree::new_tree(
         nb_particules,
         nb_particules_save,
@@ -180,6 +169,8 @@ fn main() {
         theta_init,
     );
 
-    //run the simulation
+    /////////////////////////////////////////////
+    //////////// run the simulations ////////////
+    /////////////////////////////////////////////
     simulation(&mut tree, time, folder.to_string(), crash_time);
 }
