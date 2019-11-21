@@ -6,6 +6,7 @@ extern crate std;
 use crate::ini::Ini;
 use crate::std::env::args;
 use crate::std::fs;
+use std::io::ErrorKind;
 
 mod particules;
 mod tree;
@@ -14,10 +15,17 @@ use crate::tree::*;
 use crate::write::*;
 
 fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
+
     //create folders
-    let _ = fs::create_dir(folder.clone());
-    let _ = fs::create_dir(format!("{}/positions", folder));
-    let _ = fs::create_dir(format!("{}/densities", folder));
+    fs::create_dir(folder.clone()).unwrap_or_else(|err| {
+        if err.kind() == ErrorKind::AlreadyExists {
+            panic!("Simulation file already exists! Please change 'folder' in the configuration file.")
+        } else {
+            panic!("Unforeseen error creating simulation folder")
+        }
+    });
+    fs::create_dir(format!("{}/positions", folder)).unwrap();
+    fs::create_dir(format!("{}/densities", folder)).unwrap();
 
     //time
     let mut t = 0f64;
@@ -89,12 +97,46 @@ fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
     write_infos(&infos, &inertia_matrices, folder.clone());
 }
 
+fn read<T>(section: &std::collections::HashMap<std::string::String, std::string::String>, expr: &str) -> T 
+    where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Debug {
+    section.get(expr).unwrap().parse().unwrap()
+}
+
 fn main() {
     //read values from the configuration file
     let arg: String = args().nth(1).unwrap();
     let conf = Ini::load_from_file(format!("./{}", arg)).unwrap();
 
     let section = conf.section(None::<String>).unwrap();
+    
+    //number of particules
+    let nb_particules = read(section, "nb_particules");
+    //number of particles positions saved
+    let nb_particules_save = read(section, "nb_particules_save");
+    //dt = dynamycal_time / mu
+    let mu = read(section, "mu");
+    //epsilon = (4/(3*N*pi))^(1/3) R50 / lambda
+    let lambda = read(section, "lambda");
+    //initial value of the virial ratio
+    let virial: f64 = read(section, "virial");
+    //duration of the simulation in dynamical time
+    let time = read(section, "time");
+    //approximation of the acceleration
+    let theta = read(section, "theta");
+    //is it a plummer model or a uniform sphere
+    let plummer = read(section, "plummer");
+    //number of bins used for the density
+    let nb_bins = read(section, "nb_bins");
+    //number of neighbors used for the local density
+    let nb_neighbors = read(section, "nb_neighbors");
+    //folder name
+    let folder = section.get("folder").unwrap();
+    //we use special theta and mu for the start of the simulation
+    let crash_time = read(section, "crash_time");
+    let mu_init = read(section, "mu_init");
+    let theta_init = read(section, "theta_init");
+
+    /*
     //number of particules
     let nb_particules = section.get("nb_particules").unwrap().parse().unwrap();
     //number of particles positions saved
@@ -121,6 +163,7 @@ fn main() {
     let crash_time = section.get("crash_time").unwrap().parse().unwrap();
     let mu_init = section.get("mu_init").unwrap().parse().unwrap();
     let theta_init = section.get("theta_init").unwrap().parse().unwrap();
+    */
 
     //build the octree and generate particules
     let mut tree = Tree::new_tree(
