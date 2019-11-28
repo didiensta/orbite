@@ -1,6 +1,5 @@
 use rand_distr::StandardNormal;
-
-use crate::rand::Rng;
+use rand::Rng;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Particule {
