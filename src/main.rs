@@ -1,21 +1,20 @@
+//! # Orbite
+//! N-body simulation of a globular cluster using a tree code.
+//! Read the [README](README.md) to see how to run.
+
 #![allow(dead_code)]
-extern crate ini;
-extern crate rand;
-extern crate rayon;
-extern crate std;
-use crate::ini::Ini;
-use crate::std::env::args;
-use crate::std::fs;
-use std::io::ErrorKind;
+use ini::Ini;
+use std::{env::args, fs, io::ErrorKind};
 
 mod particules;
 mod tree;
 mod write;
+
 use crate::tree::*;
 use crate::write::*;
 
+///Handles the whole simulation.
 fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
-
     //time
     let mut t = 0f64;
     //vector for infos
@@ -67,7 +66,8 @@ fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
         //write to file the positions of the particules and the density
         write_positions(
             &tree, 
-            format!("{}/positions/{}.csv", folder, c.to_string()));
+            format!("{}/positions/{}.csv", folder, c.to_string())
+        );
 
         write_density(
             &tree,
@@ -82,7 +82,7 @@ fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
             t += tree.dt / tree.dynamical_time;
         }
 
-        c = c + 1;
+        c += 1;
     }
 
     //write all the values of infos and inertia_matrices to file
@@ -91,7 +91,8 @@ fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
 
 fn read<T>(section: &std::collections::HashMap<std::string::String, std::string::String>, expr: &str) -> T 
     where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Debug {
-        //for better readability in main below
+        //Yuck...
+        //Tring to factorise code here...
     section.get(expr).unwrap().parse().unwrap()
 }
 

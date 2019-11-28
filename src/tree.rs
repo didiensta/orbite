@@ -1,5 +1,5 @@
 use crate::particules::*;
-use crate::rayon::prelude::*;
+use rayon::prelude::*;
 
 pub struct Node {
     // 1/2 of the side of the box
