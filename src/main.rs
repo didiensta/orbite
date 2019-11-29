@@ -64,15 +64,9 @@ fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
         inertia_matrices.push(tree.inertia_matrix);
 
         //write to file the positions of the particules and the density
-        write_positions(
-            &tree, 
-            format!("{}/positions/{}.csv", folder, c.to_string())
-        );
+        write_positions(&tree, format!("{}/positions/{}.csv", folder, c.to_string()));
 
-        write_density(
-            &tree,
-            format!("{}/densities/{}.csv", folder, t.to_string()),
-        );
+        write_density(&tree, format!("{}/densities/{}.csv", folder, t.to_string()));
 
         //simulate 10 steps
         for _ in 0..10 {
@@ -89,13 +83,18 @@ fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
     write_infos(&infos, &inertia_matrices, folder.clone());
 }
 
-fn read<T>(section: &std::collections::HashMap<std::string::String, std::string::String>, expr: &str) -> T 
-    where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Debug {
-        //Yuck...
-        //Tring to factorise code here...
+fn read<T>(
+    section: &std::collections::HashMap<std::string::String, std::string::String>,
+    expr: &str,
+) -> T
+where
+    T: std::str::FromStr,
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
+    //Yuck...
+    //Tring to factorise code here...
     section.get(expr).unwrap().parse().unwrap()
 }
-
 
 fn main() {
     /////////////////////////////////////////////
@@ -111,7 +110,7 @@ fn main() {
     let conf = Ini::load_from_file(format!("./{}", arg)).unwrap();
 
     let section = conf.section(None::<String>).unwrap();
-    
+
     //number of particules
     let nb_particules = read(section, "nb_particules");
     //number of particles positions saved
@@ -144,8 +143,10 @@ fn main() {
     //////////////////////////////////////////////
     fs::create_dir(folder.clone()).unwrap_or_else(|err| {
         if err.kind() == ErrorKind::AlreadyExists {
-            panic!("Simulation file already exists! \
-Please change 'folder' in the configuration file.")
+            panic!(
+                "Simulation file already exists! \
+                 Please change 'folder' in the configuration file."
+            )
         } else {
             panic!("Unforeseen error creating simulation folder")
         }

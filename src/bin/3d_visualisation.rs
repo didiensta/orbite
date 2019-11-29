@@ -1,19 +1,20 @@
-use kiss3d;
-use nalgebra as na;
 use csv;
+use kiss3d;
+use kiss3d::camera::Camera;
+use kiss3d::context::Context;
+use kiss3d::planar_camera::PlanarCamera;
+use kiss3d::post_processing::PostProcessingEffect;
+use kiss3d::renderer::Renderer;
+use kiss3d::resource::{
+    AllocationType, BufferType, Effect, GPUVec, ShaderAttribute, ShaderUniform,
+};
+use kiss3d::text::Font;
+use kiss3d::window::{State, Window};
+use na::{Matrix4, Point2, Point3};
+use nalgebra as na;
 use std::fs::File;
 use std::io::ErrorKind;
 use std::{thread, time};
-use kiss3d::resource::{Effect, ShaderAttribute, ShaderUniform, GPUVec,
-                       BufferType, AllocationType};
-use kiss3d::context::Context;
-use kiss3d::planar_camera::PlanarCamera;
-use kiss3d::renderer::Renderer;
-use kiss3d::post_processing::PostProcessingEffect;
-use kiss3d::window::{Window, State};
-use kiss3d::camera::Camera;
-use kiss3d::text::Font;
-use na::{Point3, Point2, Matrix4};
 
 // Custom renderers are used to allow rendering objects that are not necessarily
 // represented as meshes. In this example, we will render a large, growing, point cloud
@@ -25,13 +26,15 @@ use na::{Point3, Point2, Matrix4};
 
 struct AppState {
     point_cloud_renderer: PointCloudRenderer,
-    iteration:  usize,
+    iteration: usize,
 }
 
 impl State for AppState {
     // Return the custom renderer that will be called at each
     // render loop.
-    fn cameras_and_effect_and_renderer(&mut self) -> (
+    fn cameras_and_effect_and_renderer(
+        &mut self,
+    ) -> (
         Option<&mut dyn Camera>,
         Option<&mut dyn PlanarCamera>,
         Option<&mut dyn Renderer>,
@@ -57,9 +60,9 @@ impl State for AppState {
 
         //build a csv reader without header and with delimiter ";"
         let mut reader = csv::ReaderBuilder::new()
-        .delimiter(b';')
-        .has_headers(false)
-        .from_reader(file);
+            .delimiter(b';')
+            .has_headers(false)
+            .from_reader(file);
 
         for result in reader.records() {
             //iterate over each line
@@ -69,16 +72,20 @@ impl State for AppState {
             let position: Point3<f32> = Point3::new(
                 record.get(0).unwrap().parse::<f32>().unwrap(),
                 record.get(1).unwrap().parse::<f32>().unwrap(),
-                record.get(2).unwrap().parse::<f32>().unwrap()
+                record.get(2).unwrap().parse::<f32>().unwrap(),
             );
-            self.point_cloud_renderer.push(
-                position, 
-                Point3::new(1., 1., 1.)
-                );
+            self.point_cloud_renderer
+                .push(position, Point3::new(1., 1., 1.));
         }
 
         let text = format!("Iteration: {}", self.iteration);
-        window.draw_text(&text, &Point2::new(0.0, 20.0), 60.0, &Font::default(), &Point3::new(1.0, 1.0, 1.0));
+        window.draw_text(
+            &text,
+            &Point2::new(0.0, 20.0),
+            60.0,
+            &Font::default(),
+            &Point3::new(1.0, 1.0, 1.0),
+        );
 
         let sleep_time = time::Duration::from_millis(60);
         thread::sleep(sleep_time);
@@ -155,7 +162,7 @@ impl Renderer for PointCloudRenderer {
     }
 }
 
-const VERTEX_SHADER_SRC: &'static str = "#version 100
+const VERTEX_SHADER_SRC: &str = "#version 100
     attribute vec3 position;
     attribute vec3 color;
     varying   vec3 Color;
@@ -166,7 +173,7 @@ const VERTEX_SHADER_SRC: &'static str = "#version 100
         Color = color;
     }";
 
-const FRAGMENT_SHADER_SRC: &'static str = "#version 100
+const FRAGMENT_SHADER_SRC: &str = "#version 100
     #ifdef GL_FRAGMENT_PRECISION_HIGH
     precision highp float;
     #else
@@ -182,7 +189,7 @@ fn main() {
     let window = Window::new("Kiss3d: persistent_point_cloud");
     let app = AppState {
         point_cloud_renderer: PointCloudRenderer::new(4.0),
-        iteration: 0
+        iteration: 0,
     };
 
     window.render_loop(app)

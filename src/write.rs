@@ -24,20 +24,20 @@ pub fn write_positions(tree: &Tree, file_name: String) {
     }
 }
 
-pub fn write_infos(infos: &Vec<Vec<f64>>, inertia_matrices: &Vec<[f64; 9]>, folder_name: String) {
+pub fn write_infos(infos: &[Vec<f64>], inertia_matrices: &[[f64; 9]], folder_name: String) {
     let mut file = File::create(format!("{}/infos.csv", folder_name)).unwrap();
     for info in infos.iter() {
         for i in info {
             write!(&mut file, "{};", i).unwrap();
         }
-        write!(&mut file, "\n").unwrap();
+        writeln!(&mut file, "").unwrap();
     }
     let mut file_inertia = File::create(format!("{}/inertia_matrix.csv", folder_name)).unwrap();
     for matrix in inertia_matrices.iter() {
         for i in matrix {
             write!(&mut file_inertia, "{};", i).unwrap();
         }
-        write!(&mut file_inertia, "\n").unwrap();
+        writeln!(&mut file_inertia, "").unwrap();
     }
 }
 
@@ -50,7 +50,6 @@ pub fn write_density(tree: &Tree, file_name: String) {
         .map(|p| {
             f64::sqrt(
                 (0..3)
-                    .into_iter()
                     .map(|i| (p.position[i] - tree.center[i]).powf(2f64))
                     .sum(),
             )
@@ -75,6 +74,6 @@ pub fn write_density(tree: &Tree, file_name: String) {
 
     let mut file = File::create(file_name).unwrap();
     for i in 0..number_of_bins - 1 {
-        write!(&mut file, "{};{}\n", bins_radii[i], bins[i]).unwrap();
+        writeln!(&mut file, "{};{}", bins_radii[i], bins[i]).unwrap();
     }
 }

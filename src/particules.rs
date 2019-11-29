@@ -1,5 +1,5 @@
-use rand_distr::StandardNormal;
 use rand::Rng;
+use rand_distr::StandardNormal;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Particule {
@@ -155,12 +155,11 @@ fn plummer(nb: usize) -> Vec<Particule> {
 }
 
 pub fn generation(nb: usize, is_plummer: bool) -> Vec<Particule> {
-    let particules;
-    if is_plummer {
-        particules = plummer(nb);
+    let particules = if is_plummer {
+        plummer(nb)
     } else {
-        particules = unif_gen(nb);
+        unif_gen(nb)
         //particules = henon_gen(nb);
-    }
+    };
     return particules;
 }

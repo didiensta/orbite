@@ -62,15 +62,15 @@ impl Tree {
             //we set the X bit to one
             //X = 1
             //so we add 4, because 4 = (100)b
-            id = id + 4;
+            id += 4;
         }
         if self.particules[p_id].position[1] > self.nodes[node_id].center[1] {
             //Y = 1
-            id = id + 2;
+            id += 2;
         }
         if self.particules[p_id].position[2] > self.nodes[node_id].center[2] {
             //Z = 1
-            id = id + 1;
+            id += 1;
         }
         id
     }
@@ -85,15 +85,15 @@ impl Tree {
         let last_node = self.nodes.len();
         let center = self.nodes[mother_id].center;
         let size = 0.5 * self.nodes[mother_id].size;
-        let foo = subtree as i8;
+        let subtree_i8 = subtree as i8;
         self.nodes.push(Node {
-            size: size,
+            size,
             //compute the center
             //we multiply size by +1 or -1
             center: [
-                center[0] + size * (2 * ((foo & 4) >> 2) - 1) as f64,
-                center[1] + size * (2 * ((foo & 2) >> 1) - 1) as f64,
-                center[2] + size * (2 * ((foo) & 1) - 1) as f64,
+                center[0] + size * (2 * ((subtree_i8 & 4) >> 2) - 1) as f64,
+                center[1] + size * (2 * ((subtree_i8 & 2) >> 1) - 1) as f64,
+                center[2] + size * (2 * ((subtree_i8) & 1) - 1) as f64,
             ],
             center_of_mass: [0., 0., 0.],
             mass: 0.,
@@ -159,7 +159,7 @@ impl Tree {
             p.position
                 .iter_mut()
                 .zip(self.center.iter())
-                .for_each(|(x, c)| *x = -0.95 * (*x) + 2.*c);
+                .for_each(|(x, c)| *x = -0.95 * (*x) + 2. * c);
         }
         self.add_particule_rec(0, particule_id);
     }
@@ -186,16 +186,16 @@ impl Tree {
             energy: 0f64,
             virial: 0f64,
             dynamical_time: 0f64,
-            theta: theta,
+            theta,
             dt: 0.01f64,
-            mu: mu,
+            mu,
             epsilon: 0.01f64,
-            lambda: lambda,
-            nb_save: nb_save,
-            nb_bins: nb_bins,
-            nb_neighbors: nb_neighbors,
-            mu_init: mu_init,
-            theta_init: theta_init,
+            lambda,
+            nb_save,
+            nb_bins,
+            nb_neighbors,
+            mu_init,
+            theta_init,
         };
         //root node
         tree.nodes.push(Node {
@@ -259,7 +259,7 @@ impl Tree {
 
     //recursively change the center of mass of the nodes
     fn compute_center_of_mass(&mut self, id: usize) {
-        let kids = self.nodes[id].kids.clone();
+        let kids = self.nodes[id].kids;
         for kid in kids.iter() {
             match kid {
                 None => {
@@ -319,7 +319,7 @@ impl Tree {
             }
             ap[3] -= n.mass / d;
         } else {
-            let kids = n.kids.clone();
+            let kids = n.kids;
             for kid in kids.iter() {
                 if kid.is_some() {
                     let ap_ = self.compute_acceleration_rec(p_id, kid.unwrap() as usize);
@@ -338,7 +338,7 @@ impl Tree {
         //vec of ([acceleration, potential])
         let mut aps = vec![[0f64; 4]; self.particules.len()];
         aps.par_iter_mut().enumerate().for_each(|(p_id, ap)| {
-            *ap = self.compute_acceleration_rec(p_id, 0).clone();
+            *ap = self.compute_acceleration_rec(p_id, 0);
         });
         self.particules
             .par_iter_mut()

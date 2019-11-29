@@ -1,8 +1,9 @@
 [package]
 name = "orbite"
-version = "0.1.0"
+version = "0.2.0"
 authors = [""]
 edition = "2018"
+default-run = "orbite"
 
 [dependencies]
 rand = "0.7.0"
