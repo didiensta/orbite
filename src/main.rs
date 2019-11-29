@@ -23,18 +23,13 @@ fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
     let mut inertia_matrices = Vec::new();
     //count files
     let mut c = 0;
-    //we save the general value of mu (dt = dynamical_time / mu)
-    let mu = tree.mu;
-    //and theta
-    let theta = tree.theta;
+
+    //main loop
     while t < time {
         //we use special values of theta and mu for the start of the simulation
         if t < crash_time {
             tree.mu = tree.mu_init;
             tree.theta = tree.theta_init;
-        } else {
-            tree.mu = mu;
-            tree.theta = theta;
         }
 
         println!("***");
@@ -157,7 +152,7 @@ fn main() {
     //////////////////////////////////////////////
     // build the octree and generate particules //
     //////////////////////////////////////////////
-    let mut tree = Tree::new_tree(
+    let mut tree = Tree::new(
         nb_particules,
         nb_particules_save,
         mu,

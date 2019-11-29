@@ -164,7 +164,7 @@ impl Tree {
         self.add_particule_rec(0, particule_id);
     }
 
-    pub fn new_tree(
+    pub fn new(
         nb: usize,
         nb_save: usize,
         mu: f64,
