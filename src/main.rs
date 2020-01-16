@@ -209,6 +209,11 @@ fn main() {
     /////////////////////////////////////////////
     //////////// run the simulation /////////////
     /////////////////////////////////////////////
-    println!("Starting the simulation");
+    println!(
+        "
+    -----------------------
+    Starting the simulation
+    -----------------------"
+    );
     simulation(&mut tree, time, &mut file, crash_time);
 }
