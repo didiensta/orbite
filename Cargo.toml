@@ -13,3 +13,5 @@ rand_distr = "*"
 kiss3d = "0.22.1"
 nalgebra = "0.19.0"
 csv = "1.1.1"
+serde = { version = "1.0.103", features = ["derive"] }
+bincode = "1.2.0"
