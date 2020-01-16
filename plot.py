@@ -1,5 +1,5 @@
 """
-Plot l'evolution de l'energie, des rapports d'axes, du viriel, des rrayons
+Plot l'evolution de l'energie, des rapports d'axes, du viriel, des rayons
 et le profil de densite.
 """
 import sys
