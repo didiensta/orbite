@@ -14,7 +14,7 @@ use tree::Tree;
 use write::write_data_to_file;
 
 //Handles the whole simulation.
-fn simulation(tree: &mut Tree, time: f64, mut file: &mut File, crash_time: f64) {
+fn simulation(tree: &mut Tree, time: f64, mut file: &mut File, crash_time: f64, ser_fmt: usize) {
     //Current time
     let mut t = 0f64;
     //Iteration incrementor
@@ -22,7 +22,7 @@ fn simulation(tree: &mut Tree, time: f64, mut file: &mut File, crash_time: f64) 
 
     //main loop
     while t < time {
-        //we use special values of theta and mu for the start of the simulation
+        //Use special values of theta and mu for the start of the simulation
         if t < crash_time {
             tree.mu = tree.mu_init;
             tree.theta = tree.theta_init;
@@ -41,8 +41,9 @@ fn simulation(tree: &mut Tree, time: f64, mut file: &mut File, crash_time: f64) 
         tree.compute_energy();
         tree.compute_epsilon();
         tree.compute_dt();
+
         //Write saved data to file
-        write_data_to_file(t, c, tree, &mut file);
+        write_data_to_file(t, c, tree, &mut file, ser_fmt);
 
         //simulate 10 steps
         for _ in 0..10 {
@@ -60,10 +61,14 @@ pub mod io {
     //! Handles the I/O logic.
 
     use std::env::args;
-    use std::fs::{create_dir, remove_dir_all};
+    use std::fs::{create_dir, remove_dir_all, File};
     use std::io::{stdin, stdout, ErrorKind, Write};
 
-    pub fn create_sim_folder(folder: &str) {
+    const MESSAGEPACK: usize = 1;
+    const CBOR: usize = 2;
+    const PICKLE: usize = 3;
+
+    pub fn create_sim_file(folder: &str) -> (File, usize) {
         create_dir(folder).unwrap_or_else(|err| {
             if err.kind() == ErrorKind::AlreadyExists {
                 println!(
@@ -90,9 +95,19 @@ pub mod io {
                 panic!("Unforeseen error creating simulation folder.")
             }
         });
+
+        let ser_fmt = get_serialization_format();
+
+        let file = match ser_fmt {
+            MESSAGEPACK => File::create("sim/data.msgpack").unwrap(),
+            CBOR => File::create("sim/data.cbor").unwrap(),
+            PICKLE => File::create("sim/data.pickle").unwrap(),
+            _ => panic!("Error while creating the data file!"), // This should not happen...
+        };
+        (file, ser_fmt)
     }
 
-    pub fn get_user_input_from_stdout() -> String {
+    fn get_user_input_from_stdout() -> String {
         //! Gets and cleans the user input from stdout
 
         let _ = stdout().flush();
@@ -102,19 +117,22 @@ pub mod io {
             .read_line(&mut user_input)
             .expect("Couldn't read the file name");
 
-        //Remove potential \r's and \n's
+        remove_end_characters(user_input)
+    }
+
+    fn remove_end_characters(mut s: String) -> String {
+        //! Remove potential \r's and \n's at end of String
         loop {
-            if let Some('\n') = user_input.chars().next_back() {
-                user_input.pop();
+            if let Some('\n') = s.chars().next_back() {
+                s.pop();
                 continue;
-            } else if let Some('\r') = user_input.chars().next_back() {
-                user_input.pop();
+            } else if let Some('\r') = s.chars().next_back() {
+                s.pop();
                 continue;
             }
             break;
         }
-
-        user_input
+        s
     }
 
     pub fn get_conf_file() -> String {
@@ -128,6 +146,44 @@ pub mod io {
             println!("Please enter a configuration file name:");
 
             get_user_input_from_stdout()
+        }
+    }
+
+    pub fn get_serialization_format() -> usize {
+        //! Tries to get the data serialization format.
+        //! Loops until found.
+
+        let user_input: String;
+
+        if let Some(arg) = args().nth(2) {
+            //If an argument is given, try it.
+            user_input = arg;
+        } else {
+            //Else, ask the user!
+            println!(
+                "Please enter a supported serialization format:
+- MessagePack\n- CBOR\n- Pickle\n- BSON\n- Protobuf"
+            );
+
+            user_input = get_user_input_from_stdout()
+        }
+
+        match serialization_format_check(user_input) {
+            Ok(x) => x,
+            Err(_) => {
+                println!("Error: could not recognize serialization format!");
+                get_serialization_format()
+            }
+        }
+    }
+
+    fn serialization_format_check(s: String) -> Result<usize, usize> {
+        let s = remove_end_characters(s);
+        match s.to_lowercase().as_str() {
+            "messagepack" => Ok(MESSAGEPACK),
+            "cbor" => Ok(CBOR),
+            "pickle" => Ok(PICKLE),
+            _ => Err(0),
         }
     }
 
@@ -153,7 +209,7 @@ fn main() {
 
     let conf = Ini::load_from_file(format!("./{}", arg)).unwrap();
 
-    let section = conf.section(None::<String>).unwrap();
+    let section = conf.section(Some("Parameters".to_owned())).unwrap();
 
     //number of particules
     let nb_particules = io::read(section, "nb_particules");
@@ -186,8 +242,7 @@ fn main() {
     /////////////// create folders ///////////////
     //////////////////////////////////////////////
 
-    io::create_sim_folder(folder);
-    let mut file = File::create("sim/data").unwrap();
+    let (mut file, ser_fmt) = io::create_sim_file(folder);
 
     //////////////////////////////////////////////
     // build the octree and generate particules //
@@ -215,5 +270,5 @@ fn main() {
     Starting the simulation
     -----------------------"
     );
-    simulation(&mut tree, time, &mut file, crash_time);
+    simulation(&mut tree, time, &mut file, crash_time, ser_fmt);
 }

@@ -1,10 +1,14 @@
 use crate::tree::Tree;
-use bincode;
-use serde::{Deserialize, Serialize};
+use rmp_serde::Serializer;
+use serde::Serialize;
 use std::fs::File;
 use std::io::Write;
 
-#[derive(Serialize, Deserialize)]
+const MESSAGEPACK: usize = 1;
+const CBOR: usize = 2;
+const PICKLE: usize = 3;
+
+#[derive(Serialize)]
 struct Data {
     t: f64,
     c: usize,
@@ -55,10 +59,24 @@ impl Data {
     }
 }
 
-pub fn write_data_to_file(t: f64, c: usize, tree: &Tree, file: &mut File) {
+pub fn write_data_to_file(t: f64, c: usize, tree: &Tree, file: &mut File, ser_fmt: usize) {
     let data = Data::new(t, c, tree);
 
-    let encoded_data: Vec<u8> = bincode::serialize(&data).unwrap();
-
-    file.write(&encoded_data[..]).unwrap();
+    match ser_fmt {
+        MESSAGEPACK => {
+            let mut buf = Vec::new();
+            let encoded_data = data.serialize(&mut Serializer::new(&mut buf)).unwrap();
+            rmp_serde::encode::write(file, &encoded_data)
+                .expect("Error: could not write data to file!");
+        }
+        CBOR => {
+            serde_cbor::to_writer(file, &data).expect("Error: could not write data to file!");
+        }
+        PICKLE => {
+            let encoded_data = serde_pickle::to_vec(&data, true).unwrap();
+            file.write_all(&encoded_data)
+                .expect("Error: could not write data to file!");
+        }
+        _ => println!("No data written to file"),
+    }
 }
