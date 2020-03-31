@@ -1,5 +1,3 @@
-use csv;
-use kiss3d;
 use kiss3d::camera::Camera;
 use kiss3d::context::Context;
 use kiss3d::planar_camera::PlanarCamera;
@@ -10,8 +8,7 @@ use kiss3d::resource::{
 };
 use kiss3d::text::Font;
 use kiss3d::window::{State, Window};
-use na::{Matrix4, Point2, Point3};
-use nalgebra as na;
+use nalgebra::{Matrix4, Point2, Point3};
 use std::fs::File;
 use std::io::ErrorKind;
 use std::{thread, time};
@@ -47,8 +44,8 @@ impl State for AppState {
         //erase all previous points
         self.point_cloud_renderer = PointCloudRenderer::new(2.0);
 
+        // Read data
         let n = self.iteration;
-        //read data:
         let path = format!("sim/positions/{}.csv", n);
         let file = File::open(path).unwrap_or_else(|err| {
             if err.kind() == ErrorKind::NotFound {

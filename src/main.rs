@@ -107,8 +107,8 @@ pub mod io {
         (file, ser_fmt)
     }
 
-    fn get_user_input_from_stdout() -> String {
-        //! Gets and cleans the user input from stdout
+    pub fn get_user_input_from_stdout() -> String {
+        //! Get and clean the user input from stdout
 
         let _ = stdout().flush();
         let mut user_input = String::new();

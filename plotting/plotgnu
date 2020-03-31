@@ -1,0 +1,13 @@
+unset border
+unset tics
+unset key
+set datafile separator ";" 
+set object 1 rectangle from screen 0,0 to screen 1,1 fillcolor rgb"black" behind
+set linetype 1 lc rgb 'white'
+set term pngcairo
+set terminal png size 1080,1080 enhanced font "Helvetica,20"
+set xrange [-5:5]
+set yrange [-5:5]
+set zrange [-5:5]
+set output fileoutput
+splot filename u 1:2:3 w d
