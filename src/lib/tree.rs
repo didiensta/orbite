@@ -1,4 +1,4 @@
-use crate::particules::*;
+pub use super::particules::*;
 use rayon::prelude::*;
 
 pub struct Node {
