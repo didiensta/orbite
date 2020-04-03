@@ -9,12 +9,9 @@ use kiss3d::resource::{
 use kiss3d::text::Font;
 use kiss3d::window::{State, Window};
 use nalgebra::{Matrix4, Point2, Point3};
-use serde::Deserialize;
-use std::fs::File;
-use std::io::ErrorKind;
 use std::{thread, time};
 
-use crate::utils::io;
+use crate::{lib::write::Data, utils::io};
 
 // Custom renderers are used to allow rendering objects that are not necessarily
 // represented as meshes. In this example, we will render a large, growing, point cloud
@@ -27,6 +24,8 @@ use crate::utils::io;
 struct AppState {
     point_cloud_renderer: PointCloudRenderer,
     iteration: usize,
+    data: Vec<Data>,
+    nb_part: usize,
 }
 
 impl State for AppState {
@@ -46,19 +45,22 @@ impl State for AppState {
     fn step(&mut self, window: &mut Window) {
         //! Actions called at each step of rendering
 
-        /*     // Erase all previous points
+        // Erase all previous points
         self.point_cloud_renderer = PointCloudRenderer::new(2.0);
 
-        for data in readerofdata {
-          let position: Point3<f32> = Point3::new(
-            data.get(0).unwrap().parse::<f32>().unwrap(),
-            data.get(1).unwrap().parse::<f32>().unwrap(),
-            data.get(2).unwrap().parse::<f32>().unwrap(),
-          );
-          self
-            .point_cloud_renderer
-            .push(position, Point3::new(1., 1., 1.));
-        } */
+        // Get current state of simulation
+        let data = self.data.get(self.iteration).unwrap();
+
+        // Iterate over all particules
+        for i in 0..self.nb_part {
+            let position: Point3<f32> = Point3::new(
+                *data.positions.get(i).unwrap().get(0).unwrap() as f32,
+                *data.positions.get(i).unwrap().get(1).unwrap() as f32,
+                *data.positions.get(i).unwrap().get(2).unwrap() as f32,
+            );
+            self.point_cloud_renderer
+                .push(position, Point3::new(1., 1., 1.));
+        }
 
         let text = format!("Iteration: {}", self.iteration);
         window.draw_text(
@@ -166,51 +168,23 @@ const FRAGMENT_SHADER_SRC: &str = "#version 100
     void main() {
         gl_FragColor = vec4(Color, 1.0);
     }";
-
-fn read_sim_data(data_path: String) {
-    //! Read simulation data
-
-    // Open file
-    let sim_data_file = File::open(data_path).unwrap_or_else(|err| {
-        if err.kind() == ErrorKind::NotFound {
-            println!("Could not find the simulation data folder, please enter a valid path:");
-            let data_path = io::get_user_input_from_stdout();
-            File::open(data_path).unwrap()
-        } else {
-            panic!("Unforeseen error accessing the simulation data!")
-        }
-    });
-
-    // Deserialize it
-    #[derive(Deserialize)]
-    // HARD-CODED IMPORT, UGLY!
-    // struct to be deserialized, given by write.rs
-    struct Data {
-        t: f64,
-        c: usize,
-        positions: Vec<[f64; 3]>,
-        speeds: Vec<[f64; 3]>,
-        rayons: [f64; 3],
-        inertia_matrix: [f64; 9],
-        energy: f64,
-        virial: f64,
-        dynamical_time: f64,
-        espilon: f64,
-    }
-    let sim_data: Data = serde_cbor::from_reader(sim_data_file).unwrap();
-}
-
 pub fn main() {
-    println!("Please enter the simulation data path:");
-    let path = io::get_user_input_from_stdout();
+    println!("Please enter the path of the folder of the simulation data:");
+    let sim_folder_path = io::get_user_input_from_stdout();
 
     println!("Readindg simulation data...");
-    let sim_data = read_sim_data(path);
+    let c: usize = io::read_nb_iter(&sim_folder_path);
+    let sim_data = io::read_sim_data(c, &sim_folder_path);
+    //TBC...
 
     let window = Window::new("Kiss3d: persistent_point_cloud");
+
+    let nb_part = sim_data.get(0).unwrap().positions.len();
     let app = AppState {
         point_cloud_renderer: PointCloudRenderer::new(4.0),
         iteration: 0,
+        data: sim_data,
+        nb_part: nb_part,
     };
 
     window.render_loop(app)
