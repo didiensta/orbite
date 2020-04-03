@@ -15,13 +15,15 @@ use utils::io;
 
 //Handles the whole simulation.
 fn simulation(
-    mut c: usize,
     tree: &mut Tree,
     time: f64,
     mut file: &mut File,
     crash_time: f64,
     ser_fmt: usize,
 ) -> usize {
+    //Iteration incrementor
+    let mut c = 0usize;
+
     //Current time
     let mut t = 0f64;
 
@@ -126,15 +128,13 @@ fn main() {
     /////////////////////////////////////////////
     //////////// run the simulation /////////////
     /////////////////////////////////////////////
-    //Iteration incrementor
-    let c = 0usize;
     println!(
         "
     -----------------------
     Starting the simulation
     -----------------------"
     );
-    simulation(c, &mut tree, time, &mut file, crash_time, ser_fmt);
+    let c = simulation(&mut tree, time, &mut file, crash_time, ser_fmt);
 
     io::save_counter_to_file(c, folder);
 }
