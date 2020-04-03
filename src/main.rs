@@ -10,15 +10,20 @@ pub mod bins; // 'bin' is a reserved keyword, binaries of binS are not standalon
 pub mod lib;
 pub mod utils;
 
-use lib::{tree::Tree, write};
+use lib::tree::Tree;
 use utils::io;
 
 //Handles the whole simulation.
-fn simulation(tree: &mut Tree, time: f64, mut file: &mut File, crash_time: f64, ser_fmt: usize) {
+fn simulation(
+    mut c: usize,
+    tree: &mut Tree,
+    time: f64,
+    mut file: &mut File,
+    crash_time: f64,
+    ser_fmt: usize,
+) -> usize {
     //Current time
     let mut t = 0f64;
-    //Iteration incrementor
-    let mut c = 0usize;
 
     //main loop
     while t < time {
@@ -43,7 +48,7 @@ fn simulation(tree: &mut Tree, time: f64, mut file: &mut File, crash_time: f64, 
         tree.compute_dt();
 
         //Write saved data to file
-        write::write_data_to_file(t, c, tree, &mut file, ser_fmt);
+        io::write_data_to_file(t, c, tree, &mut file, ser_fmt);
 
         //simulate 10 steps
         for _ in 0..10 {
@@ -55,6 +60,7 @@ fn simulation(tree: &mut Tree, time: f64, mut file: &mut File, crash_time: f64, 
 
         c += 1;
     }
+    c
 }
 
 fn main() {
@@ -87,7 +93,7 @@ fn main() {
     let nb_bins = io::read(section, "nb_bins");
     //number of neighbors used for the local density
     let nb_neighbors = io::read(section, "nb_neighbors");
-    //folder name
+    //sim data folder name
     let folder = section.get("folder").unwrap();
     //we use special theta and mu for the start of the simulation
     let crash_time = io::read(section, "crash_time");
@@ -120,11 +126,15 @@ fn main() {
     /////////////////////////////////////////////
     //////////// run the simulation /////////////
     /////////////////////////////////////////////
+    //Iteration incrementor
+    let c = 0usize;
     println!(
         "
     -----------------------
     Starting the simulation
     -----------------------"
     );
-    simulation(&mut tree, time, &mut file, crash_time, ser_fmt);
+    simulation(c, &mut tree, time, &mut file, crash_time, ser_fmt);
+
+    io::save_counter_to_file(c, folder);
 }

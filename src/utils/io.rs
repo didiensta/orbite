@@ -1,12 +1,24 @@
 //! Handles the I/O logic.
 
-use std::env::args;
-use std::fs::{create_dir, remove_dir_all, File};
-use std::io::{stdin, stdout, ErrorKind, Write};
+//use rmp_serde::Serializer;
+use std::{
+    env::args,
+    fs::{create_dir, read_to_string, remove_dir_all, File},
+    io::{stdin, stdout, ErrorKind, Write},
+};
+
+use crate::{lib::write::Data, Tree};
 
 const MESSAGEPACK: usize = 1;
 const CBOR: usize = 2;
 const PICKLE: usize = 3;
+
+pub fn save_counter_to_file(c: usize, folder: &str) {
+    // Creates a file within
+    let filename = format!("{:?}/counter.txt", folder);
+    let mut file = File::create(filename).unwrap();
+    writeln!(file, "{:?}", c).unwrap();
+}
 
 pub fn create_sim_file(folder: &str) -> (File, usize) {
     create_dir(folder).unwrap_or_else(|err| {
@@ -21,8 +33,8 @@ pub fn create_sim_file(folder: &str) -> (File, usize) {
                 let user_input = get_user_input_from_stdout();
                 if user_input == "y" {
                     println!("Erasing simulation folder...");
-                    remove_dir_all("sim").unwrap();
-                    create_dir("sim").unwrap();
+                    remove_dir_all(folder).unwrap();
+                    create_dir(folder).unwrap();
                 } else {
                     println!("Exiting...");
                     std::process::exit(1);
@@ -38,12 +50,14 @@ pub fn create_sim_file(folder: &str) -> (File, usize) {
 
     let ser_fmt = get_serialization_format();
 
-    let file = match ser_fmt {
-        MESSAGEPACK => File::create("sim/data.msgpack").unwrap(),
-        CBOR => File::create("sim/data.cbor").unwrap(),
-        PICKLE => File::create("sim/data.pickle").unwrap(),
+    let filename = match ser_fmt {
+        MESSAGEPACK => format!("{:?}/data.msgpack", folder),
+        CBOR => format!("{:?}/data.cbor", folder),
+        PICKLE => format!("{:?}/data.pickle", folder),
         _ => panic!("Error while creating the data file!"), // This should not happen...
     };
+
+    let file = File::create(filename).unwrap();
     (file, ser_fmt)
 }
 
@@ -127,6 +141,20 @@ fn serialization_format_check(s: String) -> Result<usize, usize> {
     }
 }
 
+pub fn open_sim_data_file(sim_data_file_path: String) -> File {
+    //! Return the simulation data as a File, retry if given path results in file not found, else panic
+    let sim_data_file = File::open(sim_data_file_path).unwrap_or_else(|err| {
+        if err.kind() == ErrorKind::NotFound {
+            println!("Could not find the simulation data folder, please enter a valid path:");
+            let sim_data_file_path = get_user_input_from_stdout();
+            open_sim_data_file(sim_data_file_path)
+        } else {
+            panic!("Unforeseen error accessing the simulation data!")
+        }
+    });
+    sim_data_file
+}
+
 pub fn read<T>(
     section: &std::collections::HashMap<std::string::String, std::string::String>,
     expr: &str,
@@ -138,4 +166,52 @@ where
     //Yuck...
     //Tring to factorise code here...
     section.get(expr).unwrap().parse().unwrap()
+}
+
+pub fn read_nb_iter(sim_folder_path: &String) -> usize {
+    let sim_counter_path = sim_folder_path.to_owned() + "/counter.txt";
+    let contents = read_to_string(sim_counter_path).expect("Error reading the counter file!");
+    let counter: usize = contents
+        .parse()
+        .expect("Error parsing the content of counter.txt to an integer!");
+    counter
+}
+
+pub fn read_sim_data(c: usize, sim_folder_path: &String) -> Vec<Data> {
+    //! Read simulation data
+
+    // Open sim data file
+    let sim_file_path = sim_folder_path.to_owned() + "/data.cbor";
+    let sim_data_file = open_sim_data_file(sim_file_path);
+
+    // Deserialize it
+    let mut sim_data_vec = Vec::new();
+    for _ in 0..c {
+        let sim_data: Data = serde_cbor::from_reader(&sim_data_file)
+            .expect("Error while deserializing simulation data!");
+        sim_data_vec.push(sim_data);
+    }
+    sim_data_vec
+}
+
+pub fn write_data_to_file(t: f64, c: usize, tree: &Tree, file: &mut File, ser_fmt: usize) {
+    let data = Data::new(t, c, tree);
+
+    match ser_fmt {
+        /*  MESSAGEPACK => { // err w/ .serialize, tmp rm
+            let mut buf = Vec::new();
+            let encoded_data = data.serialize(&mut Serializer::new(&mut buf)).unwrap();
+            rmp_serde::encode::write(file, &encoded_data)
+                .expect("Error: could not write data to file!");
+        } */
+        CBOR => {
+            serde_cbor::to_writer(file, &data).expect("Error: could not write data to file!");
+        }
+        PICKLE => {
+            let encoded_data = serde_pickle::to_vec(&data, true).unwrap();
+            file.write_all(&encoded_data)
+                .expect("Error: could not write data to file!");
+        }
+        _ => panic!("No data written to file"),
+    }
 }

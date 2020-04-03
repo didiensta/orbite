@@ -1,18 +1,10 @@
 use super::tree::Tree;
-use rmp_serde::Serializer;
-use serde::Serialize;
-use std::fs::File;
-use std::io::Write;
-
-const MESSAGEPACK: usize = 1;
-const CBOR: usize = 2;
-const PICKLE: usize = 3;
-
-#[derive(Serialize)]
-struct Data {
+use serde::{Deserialize, Serialize};
+#[derive(Serialize, Deserialize)]
+pub struct Data {
     t: f64,
     c: usize,
-    positions: Vec<[f64; 3]>,
+    pub positions: Vec<[f64; 3]>,
     speeds: Vec<[f64; 3]>,
     rayons: [f64; 3],
     inertia_matrix: [f64; 9],
@@ -56,27 +48,5 @@ impl Data {
             dynamical_time: tree.dynamical_time,
             espilon: tree.epsilon,
         }
-    }
-}
-
-pub fn write_data_to_file(t: f64, c: usize, tree: &Tree, file: &mut File, ser_fmt: usize) {
-    let data = Data::new(t, c, tree);
-
-    match ser_fmt {
-        MESSAGEPACK => {
-            let mut buf = Vec::new();
-            let encoded_data = data.serialize(&mut Serializer::new(&mut buf)).unwrap();
-            rmp_serde::encode::write(file, &encoded_data)
-                .expect("Error: could not write data to file!");
-        }
-        CBOR => {
-            serde_cbor::to_writer(file, &data).expect("Error: could not write data to file!");
-        }
-        PICKLE => {
-            let encoded_data = serde_pickle::to_vec(&data, true).unwrap();
-            file.write_all(&encoded_data)
-                .expect("Error: could not write data to file!");
-        }
-        _ => println!("No data written to file"),
     }
 }
