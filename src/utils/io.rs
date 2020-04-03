@@ -15,12 +15,13 @@ const PICKLE: usize = 3;
 
 pub fn save_counter_to_file(c: usize, folder: &str) {
     // Creates a file within
-    let filename = format!("{:?}/counter.txt", folder);
+    let filename = format!("{}/counter.txt", folder);
     let mut file = File::create(filename).unwrap();
-    writeln!(file, "{:?}", c).unwrap();
+    writeln!(file, "{}", c).unwrap();
 }
 
 pub fn create_sim_file(folder: &str) -> (File, usize) {
+    println!("Creating simulation folder...");
     create_dir(folder).unwrap_or_else(|err| {
         if err.kind() == ErrorKind::AlreadyExists {
             println!(
@@ -34,6 +35,7 @@ pub fn create_sim_file(folder: &str) -> (File, usize) {
                 if user_input == "y" {
                     println!("Erasing simulation folder...");
                     remove_dir_all(folder).unwrap();
+                    println!("Creating simulation folder...");
                     create_dir(folder).unwrap();
                 } else {
                     println!("Exiting...");
@@ -51,12 +53,12 @@ pub fn create_sim_file(folder: &str) -> (File, usize) {
     let ser_fmt = get_serialization_format();
 
     let filename = match ser_fmt {
-        MESSAGEPACK => format!("{:?}/data.msgpack", folder),
-        CBOR => format!("{:?}/data.cbor", folder),
-        PICKLE => format!("{:?}/data.pickle", folder),
+        MESSAGEPACK => format!("{}/data.msgpack", folder),
+        CBOR => format!("{}/data.cbor", folder),
+        PICKLE => format!("{}/data.pickle", folder),
         _ => panic!("Error while creating the data file!"), // This should not happen...
     };
-
+    println!("{}", filename);
     let file = File::create(filename).unwrap();
     (file, ser_fmt)
 }
