@@ -229,7 +229,7 @@ pub fn run_data_viz() {
     if let Some(arg) = args().nth(3) {
         // If an argument is given, follow it.
         if arg == "y" {
-            crate::bins::new_after_run_viz::main();
+            crate::bins::after_run_viz::main();
         } else if arg == "n" {
             println!("Exiting...");
             std::process::exit(1);
@@ -245,7 +245,7 @@ pub fn run_data_viz() {
                 Starting the visualization
                 --------------------------"
             );
-            crate::bins::new_after_run_viz::main();
+            crate::bins::after_run_viz::main();
         } else {
             println!("Exiting...");
             std::process::exit(1);
