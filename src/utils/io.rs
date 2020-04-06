@@ -17,7 +17,7 @@ pub fn save_counter_to_file(c: usize, folder: &str) {
     // Creates a file within
     let filename = format!("{}/counter.txt", folder);
     let mut file = File::create(filename).unwrap();
-    writeln!(file, "{}", c).unwrap();
+    write!(file, "{}", c).unwrap();
 }
 
 pub fn create_sim_file(folder: &str) -> (File, usize) {
@@ -58,7 +58,6 @@ pub fn create_sim_file(folder: &str) -> (File, usize) {
         PICKLE => format!("{}/data.pickle", folder),
         _ => panic!("Error while creating the data file!"), // This should not happen...
     };
-    println!("{}", filename);
     let file = File::create(filename).unwrap();
     (file, ser_fmt)
 }
@@ -147,7 +146,7 @@ pub fn open_sim_data_file(sim_data_file_path: String) -> File {
     //! Return the simulation data as a File, retry if given path results in file not found, else panic
     let sim_data_file = File::open(sim_data_file_path).unwrap_or_else(|err| {
         if err.kind() == ErrorKind::NotFound {
-            println!("Could not find the simulation data folder, please enter a valid path:");
+            println!("Could not find the simulation data file, please enter a valid path:");
             let sim_data_file_path = get_user_input_from_stdout();
             open_sim_data_file(sim_data_file_path)
         } else {
@@ -182,13 +181,18 @@ pub fn read_nb_iter(sim_folder_path: &String) -> usize {
 pub fn read_sim_data(c: usize, sim_folder_path: &String) -> Vec<Data> {
     //! Read simulation data
 
-    // Open sim data file
+    /* // Open sim data file
     let sim_file_path = sim_folder_path.to_owned() + "/data.cbor";
-    let sim_data_file = open_sim_data_file(sim_file_path);
+    let sim_data_file = open_sim_data_file(sim_file_path); */
 
     // Deserialize it
     let mut sim_data_vec = Vec::new();
-    for _ in 0..c {
+    for i in 0..c {
+        // Open sim data file
+        let sim_file_path = format!("{}/data_{}.cbor", sim_folder_path.to_owned(), i);
+        let sim_data_file = open_sim_data_file(sim_file_path);
+
+        // Read its data and append it
         let sim_data: Data = serde_cbor::from_reader(&sim_data_file)
             .expect("Error while deserializing simulation data!");
         sim_data_vec.push(sim_data);
@@ -198,6 +202,9 @@ pub fn read_sim_data(c: usize, sim_folder_path: &String) -> Vec<Data> {
 
 pub fn write_data_to_file(t: f64, c: usize, tree: &Tree, file: &mut File, ser_fmt: usize) {
     let data = Data::new(t, c, tree);
+
+    let file_path = format!("sim/data_{}.cbor", c);
+    let mut file = File::create(file_path).unwrap();
 
     match ser_fmt {
         /*  MESSAGEPACK => { // err w/ .serialize, tmp rm

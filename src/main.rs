@@ -71,7 +71,7 @@ fn main() {
     /////////////////////////////////////////////
     let arg = io::get_conf_file();
 
-    let conf = Ini::load_from_file(format!("./{}", arg)).unwrap();
+    let conf = Ini::load_from_file(format!("./{}", arg)).unwrap(); //panics if orbite not called at crates's root
 
     let section = conf.section(Some("Parameters".to_owned())).unwrap();
 
@@ -137,4 +137,6 @@ fn main() {
     let c = simulation(&mut tree, time, &mut file, crash_time, ser_fmt);
 
     io::save_counter_to_file(c, folder);
+
+    bins::new_after_run_viz::main();
 }
