@@ -138,5 +138,5 @@ fn main() {
 
     io::save_counter_to_file(c, folder);
 
-    bins::new_after_run_viz::main();
+    io::run_data_viz()
 }

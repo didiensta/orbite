@@ -224,3 +224,31 @@ pub fn write_data_to_file(t: f64, c: usize, tree: &Tree, file: &mut File, ser_fm
         _ => panic!("No data written to file"),
     }
 }
+
+pub fn run_data_viz() {
+    if let Some(arg) = args().nth(3) {
+        // If an argument is given, follow it.
+        if arg == "y" {
+            crate::bins::new_after_run_viz::main();
+        } else if arg == "n" {
+            println!("Exiting...");
+            std::process::exit(1);
+        }
+    } else {
+        // Else, ask the user!
+        println!("Run 3D data visualization?");
+        let user_input = get_user_input_from_stdout();
+        if user_input == "y" {
+            println!(
+                "
+                --------------------------
+                Starting the visualization
+                --------------------------"
+            );
+            crate::bins::new_after_run_viz::main();
+        } else {
+            println!("Exiting...");
+            std::process::exit(1);
+        }
+    }
+}
