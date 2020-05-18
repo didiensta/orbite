@@ -220,8 +220,6 @@ impl Tree {
         tree.compute_dt();
 
         let virial_temp = tree.virial;
-        //println!("energy{}", tree.energy);
-        //println!("virial temp {}", virial_temp);
 
         //change the virial ratio
         tree.particules.par_iter_mut().for_each(|p| {

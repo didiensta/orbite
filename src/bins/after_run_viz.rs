@@ -1,14 +1,16 @@
 use kiss3d::camera::Camera;
 use kiss3d::context::Context;
+use kiss3d::light::Light;
 use kiss3d::planar_camera::PlanarCamera;
 use kiss3d::post_processing::PostProcessingEffect;
 use kiss3d::renderer::Renderer;
 use kiss3d::resource::{
     AllocationType, BufferType, Effect, GPUVec, ShaderAttribute, ShaderUniform,
 };
+use kiss3d::scene::SceneNode;
 use kiss3d::text::Font;
 use kiss3d::window::{State, Window};
-use nalgebra::{Matrix4, Point2, Point3};
+use nalgebra::{Matrix4, Point2, Point3, Translation3}; //, UnitComplex, UnitQuaternion, Vector3};
 use std::{thread, time};
 
 use crate::{lib::write::Data, utils::io};
@@ -168,7 +170,8 @@ const FRAGMENT_SHADER_SRC: &str = "#version 100
     void main() {
         gl_FragColor = vec4(Color, 1.0);
     }";
-pub fn main() {
+
+/* pub fn function() {
     println!("Please enter the path of the folder of the simulation data:");
     let sim_folder_path = io::get_user_input_from_stdout();
 
@@ -188,4 +191,116 @@ pub fn main() {
     };
 
     window.render_loop(app)
+} */
+
+fn next_iteration(
+    window: &mut Window,
+    iteration: usize,
+    nb_max_iter: usize,
+    nb_points: usize,
+    sim_data: &mut Vec<Data>,
+    cube_list: &mut Vec<SceneNode>,
+) {
+    //! Updates the visualisation. Does nothing if iteration is
+    //! (greater or) equal to nb_max_iter.
+
+    if iteration >= nb_max_iter {
+        return ();
+    }
+
+    // Get current state of simulation
+    let current_data = match sim_data.get(iteration) {
+        Some(data) => data,
+        None => panic!(
+            "Couldn't get state of simulation at iteration n°{}!",
+            iteration
+        ),
+    };
+
+    // Remove former cubes
+    for c in 0..cube_list.len() {
+        window.remove_node(&mut cube_list[c]);
+    }
+
+    // Add as many cubes as there are points
+    for k in 0..nb_points {
+        // Extract positions
+        let position: [f64; 3] = match current_data.positions.get(k) {
+            Some(data) => *data,
+            None => panic!(
+                "Couldn't get position of point n°{} at iteration n°{}!",
+                k, iteration
+            ),
+        };
+        // unwrap()'s should be safe here...
+        let position: Point3<f32> = Point3::new(
+            *position.get(0).unwrap() as f32,
+            *position.get(1).unwrap() as f32,
+            *position.get(2).unwrap() as f32,
+        );
+        // Create a cube, add and image to its faces, and position it
+        let mut cube = window.add_cube(1., 1., 1.);
+        cube.append_translation(&Translation3::new(position.x, position.y, position.z));
+        cube.set_texture_from_memory(include_bytes!("./star_alt.png"), "star");
+
+        // add it to the list
+        match cube_list.get(k) {
+            Some(_) => cube_list[k] = cube,
+            None => cube_list.push(cube),
+        }
+    }
+
+    // Pause the update loop
+    let sleep_time = time::Duration::from_millis(33);
+    thread::sleep(sleep_time);
+}
+
+fn get_sim_folder_path(folder: Option<&String>) -> String {
+    //! Read the simulation data
+    let sim_folder_path = match folder {
+        Some(string) => string.to_owned(),
+        None => {
+            println!("Please enter the path of the folder of the simulation data:");
+            io::get_user_input_from_stdout()
+        }
+    };
+    sim_folder_path
+}
+
+pub fn main(folder: Option<&String>) {
+    // Read the simulation data
+
+    // Create the window
+    let mut window = Window::new("Orbite: 3D visualization");
+
+    // Initialise
+    let mut iteration = 0usize;
+
+    window.set_light(Light::StickToCamera);
+
+    // Retrieve simulation data
+    let sim_folder_path = get_sim_folder_path(folder);
+    println!("Readindg simulation data...");
+    let nb_max_iter: usize = io::read_nb_iter(&sim_folder_path);
+    let sim_data = &mut io::read_sim_data(nb_max_iter, &sim_folder_path);
+    let nb_points = sim_data.get(0).unwrap().positions.len();
+
+    //let rot3d = UnitQuaternion::from_axis_angle(&Vector3::y_axis(), 0.014);
+
+    let cube_list = &mut Vec::new();
+
+    while window.render() {
+        // display next frame
+        next_iteration(
+            &mut window,
+            iteration,
+            nb_max_iter,
+            nb_points,
+            sim_data,
+            cube_list,
+        );
+
+        //iterate
+        iteration += 1;
+    }
 }

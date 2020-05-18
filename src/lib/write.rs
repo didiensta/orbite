@@ -2,16 +2,16 @@ use super::tree::Tree;
 use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct Data {
-    t: f64,
-    c: usize,
+    pub t: f64,
+    pub c: usize,
     pub positions: Vec<[f64; 3]>,
-    speeds: Vec<[f64; 3]>,
-    rayons: [f64; 3],
-    inertia_matrix: [f64; 9],
-    energy: f64,
-    virial: f64,
-    dynamical_time: f64,
-    espilon: f64,
+    pub speeds: Vec<[f64; 3]>,
+    pub rayons: [f64; 3],
+    pub inertia_matrix: [f64; 9],
+    pub energy: f64,
+    pub virial: f64,
+    pub dynamical_time: f64,
+    pub espilon: f64,
 }
 
 impl Data {
@@ -47,6 +47,23 @@ impl Data {
             virial: tree.virial,
             dynamical_time: tree.dynamical_time,
             espilon: tree.epsilon,
+        }
+    }
+
+    pub fn new_empty() -> Data {
+        //! Create a dumb empty new Data instance
+        //! with 0 or empty values.
+        Data {
+            t: 0f64,
+            c: 0usize,
+            positions: Vec::new(),
+            speeds: Vec::new(),
+            rayons: [0f64; 3],
+            inertia_matrix: [0f64; 9],
+            energy: 0f64,
+            virial: 0f64,
+            dynamical_time: 0f64,
+            espilon: 0f64,
         }
     }
 }

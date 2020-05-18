@@ -4,7 +4,6 @@
 
 #![allow(dead_code)]
 use ini::Ini;
-use std::fs::File;
 
 pub mod bins; // 'bin' is a reserved keyword, binaries of binS are not standalone
 pub mod lib;
@@ -14,13 +13,7 @@ use lib::tree::Tree;
 use utils::io;
 
 //Handles the whole simulation.
-fn simulation(
-    tree: &mut Tree,
-    time: f64,
-    mut file: &mut File,
-    crash_time: f64,
-    ser_fmt: usize,
-) -> usize {
+fn simulation(tree: &mut Tree, time: f64, crash_time: f64, ser_fmt: usize) -> usize {
     //Iteration incrementor
     let mut c = 0usize;
 
@@ -50,7 +43,7 @@ fn simulation(
         tree.compute_dt();
 
         //Write saved data to file
-        io::write_data_to_file(t, c, tree, &mut file, ser_fmt);
+        io::write_data_to_file(t, c, tree, ser_fmt);
 
         //simulate 10 steps
         for _ in 0..10 {
@@ -106,7 +99,7 @@ fn main() {
     /////////////// create folders ///////////////
     //////////////////////////////////////////////
 
-    let (mut file, ser_fmt) = io::create_sim_file(folder);
+    let (_, ser_fmt) = io::create_sim_file(folder);
 
     //////////////////////////////////////////////
     // build the octree and generate particules //
@@ -134,9 +127,9 @@ fn main() {
     Starting the simulation
     -----------------------"
     );
-    let c = simulation(&mut tree, time, &mut file, crash_time, ser_fmt);
+    let c = simulation(&mut tree, time, crash_time, ser_fmt);
 
     io::save_counter_to_file(c, folder);
 
-    io::run_data_viz()
+    io::run_data_viz(folder)
 }

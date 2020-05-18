@@ -9,12 +9,11 @@ use std::{
 
 use crate::{lib::write::Data, Tree};
 
-const MESSAGEPACK: usize = 1;
-const CBOR: usize = 2;
-const PICKLE: usize = 3;
+const CBOR: usize = 1;
+const PICKLE: usize = 2;
+const CSV: usize = 3;
 
 pub fn save_counter_to_file(c: usize, folder: &str) {
-    // Creates a file within
     let filename = format!("{}/counter.txt", folder);
     let mut file = File::create(filename).unwrap();
     write!(file, "{}", c).unwrap();
@@ -53,9 +52,9 @@ pub fn create_sim_file(folder: &str) -> (File, usize) {
     let ser_fmt = get_serialization_format();
 
     let filename = match ser_fmt {
-        MESSAGEPACK => format!("{}/data.msgpack", folder),
         CBOR => format!("{}/data.cbor", folder),
         PICKLE => format!("{}/data.pickle", folder),
+        CSV => format!("{}/data.csv", folder),
         _ => panic!("Error while creating the data file!"), // This should not happen...
     };
     let file = File::create(filename).unwrap();
@@ -63,16 +62,26 @@ pub fn create_sim_file(folder: &str) -> (File, usize) {
 }
 
 pub fn get_user_input_from_stdout() -> String {
-    //! Get and clean the user input from stdout
+    //! Get and clean the user input from stdin
 
     let _ = stdout().flush();
     let mut user_input = String::new();
 
     stdin()
         .read_line(&mut user_input)
-        .expect("Couldn't read the file name");
+        .expect("Couldn't read stdin");
 
     remove_end_characters(user_input)
+}
+
+pub fn borrowed_get_user_input_from_stdout(s: &mut String) -> &String {
+    //! Get the user input from stdin
+
+    let _ = stdout().flush();
+
+    stdin().read_line(s).expect("Couldn't read stdin");
+
+    s
 }
 
 fn remove_end_characters(mut s: String) -> String {
@@ -117,7 +126,7 @@ pub fn get_serialization_format() -> usize {
         //Else, ask the user!
         println!(
             "Please enter a supported serialization format:
-- MessagePack\n- CBOR\n- Pickle\n- BSON\n- Protobuf"
+- CBOR\n- Pickle"
         );
 
         user_input = get_user_input_from_stdout()
@@ -135,9 +144,9 @@ pub fn get_serialization_format() -> usize {
 fn serialization_format_check(s: String) -> Result<usize, usize> {
     let s = remove_end_characters(s);
     match s.to_lowercase().as_str() {
-        "messagepack" => Ok(MESSAGEPACK),
         "cbor" => Ok(CBOR),
         "pickle" => Ok(PICKLE),
+        "csv" => Ok(CSV),
         _ => Err(0),
     }
 }
@@ -178,16 +187,16 @@ pub fn read_nb_iter(sim_folder_path: &String) -> usize {
     counter
 }
 
-pub fn read_sim_data(c: usize, sim_folder_path: &String) -> Vec<Data> {
+pub fn read_sim_data(nb_iter: usize, sim_folder_path: &String) -> Vec<Data> {
     //! Read simulation data
 
-    /* // Open sim data file
+    /* Open sim data file
     let sim_file_path = sim_folder_path.to_owned() + "/data.cbor";
     let sim_data_file = open_sim_data_file(sim_file_path); */
 
     // Deserialize it
     let mut sim_data_vec = Vec::new();
-    for i in 0..c {
+    for i in 0..nb_iter {
         // Open sim data file
         let sim_file_path = format!("{}/data_{}.cbor", sim_folder_path.to_owned(), i);
         let sim_data_file = open_sim_data_file(sim_file_path);
@@ -200,52 +209,61 @@ pub fn read_sim_data(c: usize, sim_folder_path: &String) -> Vec<Data> {
     sim_data_vec
 }
 
-pub fn write_data_to_file(t: f64, c: usize, tree: &Tree, file: &mut File, ser_fmt: usize) {
+pub fn write_data_to_file(t: f64, c: usize, tree: &Tree, ser_fmt: usize) {
     let data = Data::new(t, c, tree);
 
-    let file_path = format!("sim/data_{}.cbor", c);
-    let mut file = File::create(file_path).unwrap();
-
     match ser_fmt {
-        /*  MESSAGEPACK => { // err w/ .serialize, tmp rm
-            let mut buf = Vec::new();
-            let encoded_data = data.serialize(&mut Serializer::new(&mut buf)).unwrap();
-            rmp_serde::encode::write(file, &encoded_data)
-                .expect("Error: could not write data to file!");
-        } */
         CBOR => {
+            let file_path = format!("sim/data_{}.cbor", c);
+            let file = File::create(file_path).expect("Error creating data file!");
             serde_cbor::to_writer(file, &data).expect("Error: could not write data to file!");
         }
         PICKLE => {
+            let file_path = format!("sim/data_{}.pickle", c);
+            let mut file = File::create(file_path).expect("Error creating data file!");
             let encoded_data = serde_pickle::to_vec(&data, true).unwrap();
             file.write_all(&encoded_data)
                 .expect("Error: could not write data to file!");
+        }
+        CSV => {
+            // only used for Blender viz for now, not all data is saved
+            let file_path = format!("sim/data_{}.csv", c);
+            let mut file = File::create(file_path).expect("Error creating data file!");
+            write!(file, "{}, {}", data.t, data.c).unwrap();
+            for i in 0..tree.nb_save {
+                write!(
+                    file,
+                    ", {}, {}, {}",
+                    data.positions[i][0], data.positions[i][1], data.positions[i][2]
+                )
+                .unwrap();
+            }
         }
         _ => panic!("No data written to file"),
     }
 }
 
-pub fn run_data_viz() {
+pub fn run_data_viz(folder: &String) {
     if let Some(arg) = args().nth(3) {
         // If an argument is given, follow it.
         if arg == "y" {
-            crate::bins::after_run_viz::main();
+            crate::bins::after_run_viz::main(Some(folder));
         } else if arg == "n" {
             println!("Exiting...");
             std::process::exit(1);
         }
     } else {
         // Else, ask the user!
-        println!("Run 3D data visualization?");
+        println!("Run 3D data visualization (only works with CBOR for now)? (y/n)");
         let user_input = get_user_input_from_stdout();
         if user_input == "y" {
             println!(
                 "
-                --------------------------
-                Starting the visualization
-                --------------------------"
+--------------------------
+Starting the visualization
+--------------------------"
             );
-            crate::bins::after_run_viz::main();
+            crate::bins::after_run_viz::main(Some(folder));
         } else {
             println!("Exiting...");
             std::process::exit(1);
