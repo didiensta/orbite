@@ -22,26 +22,3 @@ Or build and run at the same time:
 
 Use a configuration file to specify all the parameters of the simulation.
 See conf.ini for an example.
-
-## Plots
-
-Plot the energy, virial, density...  with plot.py: 
-
-    python plot.py folder_of_the_simulation
-
-Analyse the orbits with periode.py:
-
-    python periode.py folder_of_the_simulation 
-
-## Videos
-
-You can make a video of the simulation with gnuplot.sh:
-
-    ./gnuplot.sh folder_of_the_simulation
-
-It use gnuplot to render an image at each saved time steps and then use ffmpeg to animate them.
-
-
-
-
-
