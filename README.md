@@ -38,7 +38,7 @@ Run :
 ./target/release/orbite configuration_file.ini < initial_condition_file.csv
 ```
 
-Structure du fichier .csv contenat les conditions initiales (une ligne par particules) :
+Structure du fichier .csv contenat les conditions initiales (une ligne par particule) :
 ```
 ...
 position_x;position_y;position_z;vitesse_x;vitesse_y;vitesse_z
