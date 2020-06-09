@@ -172,13 +172,14 @@ impl Tree {
         virial: f64,
         theta: f64,
         is_plummer: bool,
+        from_csv: bool,
         nb_bins: usize,
         nb_neighbors: usize,
         mu_init: f64,
         theta_init: f64,
     ) -> Tree {
         let mut tree = Tree {
-            particules: generation(nb, is_plummer),
+            particules: generation(nb, is_plummer, from_csv),
             nodes: Vec::new(),
             center: [0f64, 0f64, 0f64],
             rayons: [0f64, 0f64, 0f64],

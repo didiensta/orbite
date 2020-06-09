@@ -24,6 +24,21 @@ pub fn write_positions(tree: &Tree, file_name: String) {
     }
 }
 
+// Added to the original code
+pub fn write_velocities(tree: &Tree, file_name: String) {
+    let mut file = File::create(file_name).unwrap();
+    for i in 0..tree.nb_save {
+        write!(
+            &mut file,
+            "{};{};{}\n",
+            tree.particules[i].speed[0],
+            tree.particules[i].speed[1],
+            tree.particules[i].speed[2]
+        )
+        .unwrap();
+    }
+}
+
 pub fn write_infos(infos: &Vec<Vec<f64>>, inertia_matrices: &Vec<[f64; 9]>, folder_name: String) {
     let mut file = File::create(format!("{}/infos.csv", folder_name)).unwrap();
     for info in infos.iter() {

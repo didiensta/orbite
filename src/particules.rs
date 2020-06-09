@@ -1,4 +1,6 @@
 use rand_distr::StandardNormal;
+use std::io;
+use csv;
 
 use crate::rand::Rng;
 
@@ -11,6 +13,48 @@ pub struct Particule {
     pub cinetic: f64,
     pub potential: f64,
     pub mass: f64,
+}
+
+//generate nb particules with the data
+fn from_csv_gen(nb: usize) -> Vec<Particule> {
+    println!("Initial conditions from .csv file");
+    let mut rng = rand::thread_rng();
+    let mut particules = Vec::with_capacity(nb);
+    let mut x;
+    let mut y;
+    let mut z;
+    let mut vx;
+    let mut vy;
+    let mut vz;
+    let mut c = 0;
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .delimiter(b';')
+        .from_reader(io::stdin());
+
+    for result in rdr.records() {
+        let record = result.ok().unwrap();
+        x = record.get(0).unwrap().parse::<f64>().unwrap();
+        y = record.get(1).unwrap().parse::<f64>().unwrap();
+        z = record.get(2).unwrap().parse::<f64>().unwrap();
+        vx = record.get(3).unwrap().parse::<f64>().unwrap();
+        vy = record.get(4).unwrap().parse::<f64>().unwrap();
+        vz = record.get(5).unwrap().parse::<f64>().unwrap();
+        // println!("{}, {}, {}, {}, {}, {}",x,y,z,vx,vy,vz);
+        particules.push(Particule {
+            position: [x, y, z],
+            speed: [vx, vy, vz],
+            acceleration: [0., 0., 0.],
+            cinetic: 0f64,
+            potential: 0f64,
+            mass: 1. / (nb as f64),
+        });
+        c = c + 1;
+    }
+    if c != nb {
+        println!("WARNING! : Number of particules in configuration file does not match the number of line of the .csv file")
+    }
+    particules
 }
 
 //generate nb particules with uniform distribution of velocities and positions on the unit sphere
@@ -155,13 +199,17 @@ fn plummer(nb: usize) -> Vec<Particule> {
     particules
 }
 
-pub fn generation(nb: usize, is_plummer: bool) -> Vec<Particule> {
+pub fn generation(nb: usize, is_plummer: bool, from_csv: bool) -> Vec<Particule> {
     let particules;
-    if is_plummer {
-        particules = plummer(nb);
+    if from_csv {
+        particules = from_csv_gen(nb);
     } else {
-        particules = unif_gen(nb);
-        //particules = henon_gen(nb);
+        if is_plummer {
+            particules = plummer(nb);
+        } else {
+            particules = unif_gen(nb);
+            //particules = henon_gen(nb);
+        }
     }
     return particules;
 }

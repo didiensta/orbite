@@ -3,6 +3,7 @@ extern crate ini;
 extern crate rand;
 extern crate rayon;
 extern crate std;
+extern crate csv;
 use crate::ini::Ini;
 use crate::std::env::args;
 use crate::std::fs;
@@ -31,6 +32,10 @@ fn simulation(tree: &mut Tree, time: f64, folder: String, crash_time: f64) {
     let mu = tree.mu;
     //and theta
     let theta = tree.theta;
+
+    // Added to the original code
+    // write_velocities(&tree, format!("{}/initial_velocities.csv", folder));
+
     while t < time {
         //we use special values of theta and mu for the start of the simulation
         if t < crash_time {
@@ -111,6 +116,8 @@ fn main() {
     let theta = section.get("theta").unwrap().parse().unwrap();
     //is it a plummer model or a uniform sphere
     let plummer = section.get("plummer").unwrap().parse().unwrap();
+    //should read initial distribution from a .csv file provided by stdin (<)
+    let from_csv = section.get("from_csv").unwrap().parse().unwrap();
     //number of bins used for the density
     let nb_bins = section.get("nb_bins").unwrap().parse().unwrap();
     //number of neighbors used for the local density
@@ -131,6 +138,7 @@ fn main() {
         virial,
         theta,
         plummer,
+        from_csv,
         nb_bins,
         nb_neighbors,
         mu_init,
