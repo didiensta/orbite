@@ -7,11 +7,32 @@ use std::{
     io::{stdin, stdout, ErrorKind, Write},
 };
 
-use crate::{lib::write::Data, Tree};
+use crate::{
+    lib::{particules::InitialState, write::Data},
+    Tree,
+};
 
 const CBOR: usize = 1;
 const PICKLE: usize = 2;
 const CSV: usize = 3;
+
+const PLUMMER: usize = 0;
+const UNIFORM: usize = 1;
+const HENON: usize = 2;
+const CUSTOM: usize = 3;
+
+pub fn read_initial_state(
+    section: &std::collections::HashMap<std::string::String, std::string::String>,
+) -> InitialState {
+    let state: usize = read(section, "initial_state");
+    match state {
+        PLUMMER => InitialState::Plummer,
+        UNIFORM => InitialState::Plummer,
+        HENON => InitialState::Henon,
+        CUSTOM => InitialState::Custom,
+        _ => panic!("Initial state unresolved!"),
+    }
+}
 
 pub fn save_counter_to_file(c: usize, folder: &str) {
     let filename = format!("{}/counter.txt", folder);

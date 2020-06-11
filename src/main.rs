@@ -82,8 +82,8 @@ fn main() {
     let time = io::read(section, "time");
     //approximation of the acceleration
     let theta = io::read(section, "theta");
-    //is it a plummer model or a uniform sphere
-    let plummer = io::read(section, "plummer");
+    //method of generation of th initial conditions
+    let initial_state = io::read_initial_state(section);
     //number of bins used for the density
     let nb_bins = io::read(section, "nb_bins");
     //number of neighbors used for the local density
@@ -111,7 +111,7 @@ fn main() {
         lambda,
         virial,
         theta,
-        plummer,
+        initial_state,
         nb_bins,
         nb_neighbors,
         mu_init,

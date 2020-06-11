@@ -1,5 +1,6 @@
 use rand::Rng;
 use rand_distr::StandardNormal;
+use std::io;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Particule {
@@ -10,6 +11,13 @@ pub struct Particule {
     pub cinetic: f64,
     pub potential: f64,
     pub mass: f64,
+}
+
+pub enum InitialState {
+    Plummer,
+    Uniform,
+    Henon,
+    Custom,
 }
 
 //generate nb particules with uniform distribution of velocities and positions on the unit sphere
@@ -154,12 +162,45 @@ fn plummer(nb: usize) -> Vec<Particule> {
     particules
 }
 
-pub fn generation(nb: usize, is_plummer: bool) -> Vec<Particule> {
-    let particules = if is_plummer {
-        plummer(nb)
-    } else {
-        unif_gen(nb)
-        //particules = henon_gen(nb);
-    };
-    return particules;
+//generate nb particules with the data
+fn from_csv_gen(nb: usize) -> Vec<Particule> {
+    println!("Initial conditions from .csv file");
+    let mut particules = Vec::with_capacity(nb);
+    let mut c = 0;
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .delimiter(b';')
+        .from_reader(io::stdin());
+
+    for result in rdr.records() {
+        let record = result.ok().unwrap();
+        let x = record.get(0).unwrap().parse::<f64>().unwrap();
+        let y = record.get(1).unwrap().parse::<f64>().unwrap();
+        let z = record.get(2).unwrap().parse::<f64>().unwrap();
+        let vx = record.get(3).unwrap().parse::<f64>().unwrap();
+        let vy = record.get(4).unwrap().parse::<f64>().unwrap();
+        let vz = record.get(5).unwrap().parse::<f64>().unwrap();
+        particules.push(Particule {
+            position: [x, y, z],
+            speed: [vx, vy, vz],
+            acceleration: [0., 0., 0.],
+            cinetic: 0f64,
+            potential: 0f64,
+            mass: 1. / (nb as f64),
+        });
+        c = c + 1;
+    }
+    if c != nb {
+        println!("WARNING! : Number of particules in configuration file does not match the number of line of the .csv file")
+    }
+    particules
+}
+
+pub fn generation(nb: usize, initial_state: InitialState) -> Vec<Particule> {
+    match initial_state {
+        InitialState::Plummer => plummer(nb),
+        InitialState::Uniform => unif_gen(nb),
+        InitialState::Henon => henon_gen(nb),
+        InitialState::Custom => from_csv_gen(nb),
+    }
 }
