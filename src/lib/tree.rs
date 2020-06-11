@@ -1,4 +1,5 @@
 pub use super::particules::*;
+use crate::utils::io::Configuration;
 use rayon::prelude::*;
 
 pub struct Node {
@@ -164,21 +165,9 @@ impl Tree {
         self.add_particule_rec(0, particule_id);
     }
 
-    pub fn new(
-        nb: usize,
-        nb_save: usize,
-        mu: f64,
-        lambda: f64,
-        virial: f64,
-        theta: f64,
-        initial_state: InitialState,
-        nb_bins: usize,
-        nb_neighbors: usize,
-        mu_init: f64,
-        theta_init: f64,
-    ) -> Tree {
+    pub fn new(conf: Configuration) -> Tree {
         let mut tree = Tree {
-            particules: generation(nb, initial_state),
+            particules: generation(conf.nb, &conf.initial_state),
             nodes: Vec::new(),
             center: [0f64, 0f64, 0f64],
             rayons: [0f64, 0f64, 0f64],
@@ -186,16 +175,16 @@ impl Tree {
             energy: 0f64,
             virial: 0f64,
             dynamical_time: 0f64,
-            theta,
+            theta: conf.theta,
             dt: 0.01f64,
-            mu,
+            mu: conf.mu,
             epsilon: 0.01f64,
-            lambda,
-            nb_save,
-            nb_bins,
-            nb_neighbors,
-            mu_init,
-            theta_init,
+            lambda: conf.lambda,
+            nb_save: conf.nb_save,
+            nb_bins: conf.nb_bins,
+            nb_neighbors: conf.nb_neighbors,
+            mu_init: conf.mu_init,
+            theta_init: conf.theta_init,
         };
         //root node
         tree.nodes.push(Node {
@@ -225,7 +214,7 @@ impl Tree {
         tree.particules.par_iter_mut().for_each(|p| {
             p.speed
                 .iter_mut()
-                .for_each(|s| *s *= (virial / virial_temp).sqrt());
+                .for_each(|s| *s *= (conf.virial / virial_temp).sqrt());
         });
         tree.rebuild_tree();
         tree.compute_center();

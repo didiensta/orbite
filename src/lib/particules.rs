@@ -1,6 +1,6 @@
 use rand::Rng;
 use rand_distr::StandardNormal;
-use std::io;
+use std::fs::File;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Particule {
@@ -17,7 +17,7 @@ pub enum InitialState {
     Plummer,
     Uniform,
     Henon,
-    Custom,
+    Custom(String),
 }
 
 //generate nb particules with uniform distribution of velocities and positions on the unit sphere
@@ -163,14 +163,14 @@ fn plummer(nb: usize) -> Vec<Particule> {
 }
 
 //generate nb particules with the data
-fn from_csv_gen(nb: usize) -> Vec<Particule> {
-    println!("Initial conditions from .csv file");
+fn from_csv_gen(path: &String, nb: usize) -> Vec<Particule> {
+    println!("Initial conditions from .CSV file");
     let mut particules = Vec::with_capacity(nb);
     let mut c = 0;
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(false)
         .delimiter(b';')
-        .from_reader(io::stdin());
+        .from_reader(File::open(path).unwrap());
 
     for result in rdr.records() {
         let record = result.ok().unwrap();
@@ -191,16 +191,16 @@ fn from_csv_gen(nb: usize) -> Vec<Particule> {
         c = c + 1;
     }
     if c != nb {
-        println!("WARNING! : Number of particules in configuration file does not match the number of line of the .csv file")
+        println!("WARNING: number of particules in configuration file does not match the number of line of the .csv file!")
     }
     particules
 }
 
-pub fn generation(nb: usize, initial_state: InitialState) -> Vec<Particule> {
+pub fn generation(nb: usize, initial_state: &InitialState) -> Vec<Particule> {
     match initial_state {
         InitialState::Plummer => plummer(nb),
         InitialState::Uniform => unif_gen(nb),
         InitialState::Henon => henon_gen(nb),
-        InitialState::Custom => from_csv_gen(nb),
+        InitialState::Custom(path) => from_csv_gen(path, nb),
     }
 }

@@ -21,6 +21,38 @@ const UNIFORM: usize = 1;
 const HENON: usize = 2;
 const CUSTOM: usize = 3;
 
+pub struct Configuration {
+    pub nb: usize,                   //number of particules
+    pub nb_save: usize,              //number of particles positions saved
+    pub mu: f64,                     //dt = dynamycal_time / mu
+    pub lambda: f64,                 //epsilon = (4/(3*N*pi))^(1/3) R50 / lambda
+    pub virial: f64,                 //initial value of the virial ratio
+    pub theta: f64,                  //approximation of the acceleration
+    pub initial_state: InitialState, //method of generation of the initial conditions
+    pub nb_bins: usize,              //number of bins used for the density
+    pub nb_neighbors: usize,         //number of neighbors used for the local density
+    pub mu_init: f64,                //special mu for the start of the simulation
+    pub theta_init: f64,             //idem
+}
+
+pub fn read_config(
+    section: &std::collections::HashMap<std::string::String, std::string::String>,
+) -> Configuration {
+    Configuration {
+        nb: read(section, "nb_particules"),
+        nb_save: read(section, "nb_particules_save"),
+        mu: read(section, "mu"),
+        lambda: read(section, "lambda"),
+        virial: read(section, "virial"),
+        theta: read(section, "theta"),
+        initial_state: read_initial_state(section),
+        nb_bins: read(section, "nb_bins"),
+        nb_neighbors: read(section, "nb_neighbors"),
+        mu_init: read(section, "mu_init"),
+        theta_init: read(section, "theta_init"),
+    }
+}
+
 pub fn read_initial_state(
     section: &std::collections::HashMap<std::string::String, std::string::String>,
 ) -> InitialState {
@@ -29,7 +61,10 @@ pub fn read_initial_state(
         PLUMMER => InitialState::Plummer,
         UNIFORM => InitialState::Plummer,
         HENON => InitialState::Henon,
-        CUSTOM => InitialState::Custom,
+        CUSTOM => {
+            let path = read(section, "custom_init_path");
+            InitialState::Custom(path)
+        }
         _ => panic!("Initial state unresolved!"),
     }
 }
@@ -41,7 +76,6 @@ pub fn save_counter_to_file(c: usize, folder: &str) {
 }
 
 pub fn create_sim_file(folder: &str) -> (File, usize) {
-    println!("Creating simulation folder...");
     create_dir(folder).unwrap_or_else(|err| {
         if err.kind() == ErrorKind::AlreadyExists {
             println!(
@@ -147,7 +181,7 @@ pub fn get_serialization_format() -> usize {
         //Else, ask the user!
         println!(
             "Please enter a supported serialization format:
-- CBOR\n- Pickle"
+- CBOR\n- Pickle\n- CSV (only partial support for now)"
         );
 
         user_input = get_user_input_from_stdout()
