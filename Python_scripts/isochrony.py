@@ -189,7 +189,7 @@ def pente_isochrony(sim_data, dirname, min_point_count=100, plotting=False):
     energy = sim_data['energy'][:, plan, :]
     energy = np.sum(energy, 2)
     
-    Nt, Np, _ = sim_data['positions'].shape
+    Nt, Np, _ = pos.shape
 
     print("Calcul des périodes...")
     t1 = time()
