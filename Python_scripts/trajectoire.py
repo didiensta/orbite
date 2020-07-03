@@ -1,4 +1,3 @@
-#!/bin/python3
 """
 pas fini
 Utilisable en ligne de commande :

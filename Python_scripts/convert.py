@@ -1,5 +1,3 @@
-#!/bin/python3
-
 """
 Compacte les résultats d'une simulation en un unique fichier.
  - all_data.pickle (pour Python avec le module 'pickle')

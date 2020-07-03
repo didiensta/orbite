@@ -1,4 +1,3 @@
-#!/bin/python3
 """
 Utilisable en ligne de commande :
 $ python3 verify.py all_data.pickle
